@@ -1,2 +1,8 @@
 .env
-.pyc
+__pycache__/
+*.pyc
+
+# Generated analysis outputs
+repeat_matrix.csv
+mutation_matrix.csv
+report/
