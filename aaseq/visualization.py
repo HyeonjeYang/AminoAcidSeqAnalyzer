@@ -11,6 +11,7 @@ from scipy.spatial import distance
 
 from .motifs import getrep
 from .properties import calculate_aa_properties, get_hydrophobicity_profile, generate_point_mutants
+from .structure import predict_mean_plddt
 
 
 def visualize_matrix(matrix, title="Exact Repeat Motif Frequency Heatmap", save_path=None):
@@ -174,3 +175,43 @@ def mutagenesis_phylogeny(sequence, num_mutations=20, save_path=None):
         save_path=save_path
     )
     return mutant_ids, mutants
+
+
+def mutagenesis_plddt(sequence, num_mutations=20, save_path=None):
+    """Generates random point mutants and queries the ESMFold API for each one's mean
+    pLDDT, then plots a bar chart comparing structural confidence to the wild type.
+
+    Requires an internet connection. Sequences longer than the ESMFold API limit
+    (400 residues) are truncated by aaseq.structure.predict_structure.
+    """
+    mutant_ids, mutants = generate_point_mutants(sequence, num_mutations)
+
+    print(f"\nQuerying ESMFold for {len(mutants)} sequences (this may take a while)...")
+    results = []
+    for mutant_id, seq in zip(mutant_ids, mutants):
+        print(f"  Folding {mutant_id}...")
+        mean_plddt = predict_mean_plddt(seq)
+        if mean_plddt is not None:
+            results.append((mutant_id, mean_plddt))
+
+    if not results:
+        print("  No pLDDT results obtained (ESMFold API unreachable). Skipping plot.")
+        return None
+
+    plddt_df = pd.DataFrame(results, columns=["Mutant", "Mean_pLDDT"]).set_index("Mutant")
+
+    plt.figure(figsize=(10, 6))
+    colors = ["steelblue" if idx != "Wild_Type" else "darkorange" for idx in plddt_df.index]
+    plt.bar(plddt_df.index, plddt_df["Mean_pLDDT"], color=colors)
+    plt.axhline(plddt_df.loc["Wild_Type", "Mean_pLDDT"], color="darkorange", linestyle="--", linewidth=0.8, label="Wild Type")
+    plt.title("ESMFold Mean pLDDT: Wild Type vs Point Mutants")
+    plt.xlabel("Sequence")
+    plt.ylabel("Mean pLDDT")
+    plt.xticks(rotation=90)
+    plt.legend()
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=120)
+    plt.show()
+
+    return plddt_df

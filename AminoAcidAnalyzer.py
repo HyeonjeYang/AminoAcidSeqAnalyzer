@@ -9,6 +9,7 @@ from aaseq.report import find_record, generate_report, print_quick_analysis
 from aaseq.visualization import (
     in_silico_mutagenesis,
     mutagenesis_phylogeny,
+    mutagenesis_plddt,
     perform_pca_clustering,
     perform_phylogenetic_analysis,
     perform_sequence_phylogeny,
@@ -32,6 +33,7 @@ def main():
     parser.add_argument("--seq_phylogeny", action="store_true", help="Perform alignment-based phylogenetic analysis (BLOSUM62 pairwise alignment) across all sequences")
     parser.add_argument("--mutate", action="store_true", help="Perform In Silico Mutagenesis on the selected sequence and visualize the effect")
     parser.add_argument("--mutate_phylogeny", action="store_true", help="Build an alignment-based phylogenetic tree of random point mutants of the selected sequence")
+    parser.add_argument("--mutate_plddt", action="store_true", help="Query the ESMFold API for the mean pLDDT of the wild type and each random point mutant (requires internet, <=400aa)")
     parser.add_argument("--num_mutations", type=int, default=20, help="Number of random point mutations to generate (default: 20)")
     parser.add_argument("--hydrophobicity", action="store_true", help="Plot a Kyte-Doolittle hydrophobicity profile")
     parser.add_argument("--record_id", type=str, default=None, help="Record ID to use for hydrophobicity/mutation analysis (default: first record)")
@@ -59,6 +61,9 @@ def main():
 
         if args.mutate_phylogeny:
             mutagenesis_phylogeny(sequence, args.num_mutations)
+
+        if args.mutate_plddt:
+            mutagenesis_plddt(sequence, args.num_mutations)
         return
 
     if not args.fasta_file:
@@ -146,6 +151,16 @@ def main():
             mutagenesis_phylogeny(str(target_record.seq), args.num_mutations, save_path=save_path)
             if save_path:
                 figures.append((f"In Silico Mutagenesis Phylogenetic Tree ({target_record.id})", save_path))
+
+        if args.mutate_plddt:
+            target_record = find_record(args.fasta_file, args.record_id)
+            save_path = os.path.join(report_dir, "mutagenesis_plddt.png") if args.report else None
+            plddt_df = mutagenesis_plddt(str(target_record.seq), args.num_mutations, save_path=save_path)
+            if plddt_df is not None and save_path:
+                figures.append((f"ESMFold pLDDT Comparison ({target_record.id})", save_path))
+            if plddt_df is not None and args.save:
+                plddt_df.to_csv("mutation_plddt.csv")
+                print("pLDDT comparison saved as 'mutation_plddt.csv'!")
 
         if args.report:
             generate_report(report_dir, args.fasta_file, matrix, figures, mut_matrix)

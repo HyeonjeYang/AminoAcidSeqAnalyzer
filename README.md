@@ -34,8 +34,9 @@ python AminoAcidAnalyzer.py <fasta_file> [options]
 - `--seq_phylogeny`: alignment-based phylogenetic tree across all sequences in the FASTA file, using real pairwise BLOSUM62 alignment distances
 - `--mutate`: in silico random point-mutagenesis profile heatmap for a chosen sequence (`--num_mutations` sets the mutation count)
 - `--mutate_phylogeny`: builds an alignment-based phylogenetic tree of the random point mutants, showing how each mutation shifts the sequence relative to the wild type
+- `--mutate_plddt`: queries the [ESMFold](https://esmatlas.com/about) API for the mean pLDDT (structural confidence, 0-100) of the wild type and each random point mutant, plotted as a bar chart. **Requires an internet connection**; sequences over 400 residues are truncated to the first 400 (ESMFold API limit)
 - `--hydrophobicity`: Kyte-Doolittle hydrophobicity profile plot for a chosen sequence
-- `--record_id`: pick which FASTA record to use for `--mutate` / `--mutate_phylogeny` / `--hydrophobicity` (defaults to the first record)
+- `--record_id`: pick which FASTA record to use for `--mutate` / `--mutate_phylogeny` / `--mutate_plddt` / `--hydrophobicity` (defaults to the first record)
 - `--report`: generate an HTML summary report (`report/summary.html`) bundling all generated tables and figures
 
 ### Quick single-sequence mode
@@ -54,5 +55,6 @@ This prints repeat motifs and physicochemical properties, and can also plot the 
 - `aaseq/motifs.py` - repeat motif detection
 - `aaseq/properties.py` - physicochemical properties, hydrophobicity profile, mutant generation
 - `aaseq/processing.py` - FASTA parsing and parallel feature-matrix construction
-- `aaseq/visualization.py` - plots: heatmaps, PCA/clustering, dendrograms, hydrophobicity
+- `aaseq/visualization.py` - plots: heatmaps, PCA/clustering, dendrograms, hydrophobicity, ESMFold pLDDT comparison
+- `aaseq/structure.py` - ESMFold API client (structure/pLDDT prediction)
 - `aaseq/report.py` - HTML report generation and helper lookups
