@@ -2,6 +2,7 @@ import argparse
 import concurrent.futures
 from collections import Counter
 
+from tqdm import tqdm
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -44,7 +45,8 @@ def process_fasta_to_matrix(infile, min_len=3, max_len=10, min_reps=2, workers=4
                 executor.submit(process_record, record.id, str(record.seq), min_len, max_len, min_reps)
             )
         
-        for future in concurrent.futures.as_completed(futures):
+        # tqdm을 적용하여 병렬 처리 완료 상태를 시각적으로 추적
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Analyzing sequences"):
             res = future.result()
             if res is not None:
                 all_data.append(res)
