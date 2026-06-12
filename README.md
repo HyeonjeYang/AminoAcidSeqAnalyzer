@@ -7,6 +7,12 @@ Personal toolkit for analyzing amino acid sequences: find meaningful repeated mo
 - A `.fasta` file (or a raw sequence string for quick mode)
 - Python packages: `biopython`, `pandas`, `numpy`, `scikit-learn`, `scipy`, `seaborn`, `matplotlib`, `tqdm`
 
+Install with:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Usage
 
 ```bash
