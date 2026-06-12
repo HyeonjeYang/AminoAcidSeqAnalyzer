@@ -49,9 +49,21 @@ python AminoAcidAnalyzer.py --seq "MKTAYIAKQRQ..." --hydrophobicity --mutate_phy
 
 This prints repeat motifs and physicochemical properties, and can also plot the hydrophobicity profile and a mutagenesis phylogenetic tree.
 
+## Standalone feature scripts
+
+Every major feature can also be run on its own via the scripts in `scripts/`, without going through the combined CLI:
+
+- `python scripts/motif_analysis.py <fasta_file> [--save]` - repeat-motif/property matrix + heatmap
+- `python scripts/cluster_analysis.py <fasta_file> [--clusters N] [--save]` - PCA + KMeans clustering and clustermap
+- `python scripts/phylogeny_analysis.py <fasta_file> [--feature] [--sequence]` - feature-based and/or alignment-based phylogenetic tree
+- `python scripts/mutagenesis_analysis.py <fasta_file> [--record_id ID] [--heatmap] [--phylogeny] [--plddt]` - in silico mutagenesis (heatmap / phylogeny / ESMFold pLDDT), also accepts `--seq` instead of a FASTA file
+- `python scripts/hydrophobicity_analysis.py <fasta_file> [--record_id ID] [--window N]` - Kyte-Doolittle hydrophobicity profile, also accepts `--seq`
+- `python scripts/quick_seq_analysis.py "MKT..."` - repeat motifs + physicochemical properties for a single sequence
+
 ## Project layout
 
-- `AminoAcidAnalyzer.py` - CLI entry point and orchestration
+- `AminoAcidAnalyzer.py` - combined CLI entry point and orchestration
+- `scripts/` - standalone CLIs for each individual feature (see above)
 - `aaseq/motifs.py` - repeat motif detection
 - `aaseq/properties.py` - physicochemical properties, hydrophobicity profile, mutant generation
 - `aaseq/processing.py` - FASTA parsing and parallel feature-matrix construction
