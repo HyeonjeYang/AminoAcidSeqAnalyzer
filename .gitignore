@@ -22,3 +22,9 @@ msa_conservation.csv
 qc_issues.csv
 plddt_profile.csv
 mutation_plddt.csv
+llps_profile.csv
+llps_regions.csv
+mmseqs_tmp/
+foldseek_tmp/
+mmseqs_clusters*
+foldseek_results.tsv

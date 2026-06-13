@@ -55,6 +55,33 @@ def plot_idr_profile(scores, record_id="Sequence", regions=None, save_path=None)
     plt.show()
 
 
+def plot_llps_profile(profile, record_id="Sequence", regions=None, save_path=None):
+    """Plots local LLPS heuristic score and supporting sequence features."""
+    if profile.empty:
+        print("No LLPS profile available.")
+        return
+
+    plt.figure(figsize=(12, 5))
+    plt.plot(profile["position"], profile["local_score"], label="LLPS local score", color="darkmagenta")
+    plt.plot(profile["position"], profile["prion_like_fraction"], label="Prion-like fraction", color="steelblue", alpha=0.8)
+    plt.plot(profile["position"], profile["sticker_fraction"], label="Sticker fraction", color="darkorange", alpha=0.8)
+    plt.axhline(0.6, color="darkmagenta", linestyle="--", linewidth=0.8)
+
+    if regions is not None and not regions.empty:
+        for _, row in regions.iterrows():
+            plt.axvspan(row["start"], row["end"], color="violet", alpha=0.15)
+
+    plt.ylim(0, 1.05)
+    plt.xlabel("Residue Position")
+    plt.ylabel("Fraction / score")
+    plt.title(f"LLPS Candidate Profile - {record_id}")
+    plt.legend()
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=120)
+    plt.show()
+
+
 def plot_motif_tracks(track_df, sequence_length, record_id="Sequence", save_path=None):
     """Plots repeated motif coordinates as horizontal tracks."""
     if track_df.empty:

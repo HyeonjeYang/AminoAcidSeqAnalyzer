@@ -9,6 +9,7 @@ from .motifs import getrep
 from .motifs import get_fuzzy_repeats
 from .properties import calculate_aa_properties
 from .disorder import analyze_idr
+from .llps import llps_summary_features
 
 
 def process_record(
@@ -20,6 +21,7 @@ def process_record(
     include_fuzzy=False,
     fuzzy_mismatches=1,
     include_idr=False,
+    include_llps=False,
 ):
     """Worker function for single sequence analysis (for parallel processing)"""
     repeat_counts = getrep(seq, min_len, max_len, min_reps)
@@ -29,6 +31,8 @@ def process_record(
     if include_idr:
         _, _, idr_summary = analyze_idr(seq)
         properties.update({f"IDR_{key}": value for key, value in idr_summary.items()})
+    if include_llps:
+        properties.update(llps_summary_features(seq))
 
     # Merge motif search results and chemical property data
     result_dict = {**repeat_counts, **properties}
@@ -45,6 +49,7 @@ def process_fasta_to_matrix(
     include_fuzzy=False,
     fuzzy_mismatches=1,
     include_idr=False,
+    include_llps=False,
 ):
     all_data = []
     record_iter = SeqIO.parse(infile, "fasta")
@@ -72,6 +77,7 @@ def process_fasta_to_matrix(
                         include_fuzzy,
                         fuzzy_mismatches,
                         include_idr,
+                        include_llps,
                     )
                 )
 

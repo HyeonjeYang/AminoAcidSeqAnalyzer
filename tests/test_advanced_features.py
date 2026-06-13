@@ -8,6 +8,8 @@ from aaseq.alignment import conservation_dataframe, reference_msa
 from aaseq.annotations import annotate_functional_motifs
 from aaseq.disorder import analyze_idr
 from aaseq.enrichment import group_feature_enrichment
+from aaseq.external_tools import ExternalToolError, require_executable
+from aaseq.llps import analyze_llps, llps_summary_features
 from aaseq.motifs import get_fuzzy_repeats, get_repeat_positions
 from aaseq.properties import generate_point_mutants, generate_systematic_single_mutants
 from aaseq.qc import analyze_fasta_qc
@@ -39,6 +41,15 @@ class AdvancedFeatureTests(unittest.TestCase):
 
         tracks = motif_track_dataframe("seq1", "AAAAAKAAAAA", min_len=3, max_len=4, min_reps=2)
         self.assertFalse(tracks.empty)
+
+    def test_llps_features(self):
+        sequence = "M" + "Q" * 20 + "RGGRGGRGG" + "SYGYSYG" + "EKEKEK"
+        summary, profile, regions = analyze_llps(sequence, window=15, threshold=0.45, min_region=8)
+        self.assertGreater(summary["LLPS_HeuristicScore"], 0)
+        self.assertGreater(summary["LLPS_RGGMotifCount"], 0)
+        self.assertEqual(len(profile), len(sequence))
+        self.assertFalse(regions.empty)
+        self.assertIn("LLPS_SCD", llps_summary_features(sequence))
 
     def test_annotations(self):
         annotations = annotate_functional_motifs("MKKKKAAAAAANSTPESPESTEDLLLLLLLLLLLLLLLLLLLL")
@@ -81,6 +92,10 @@ class AdvancedFeatureTests(unittest.TestCase):
         self.assertEqual(summary["Records"], 3)
         self.assertGreater(summary["IssueCount"], 0)
         self.assertIn("DuplicateID", set(issues["issue"]))
+
+    def test_missing_external_tool_error(self):
+        with self.assertRaises(ExternalToolError):
+            require_executable("__definitely_missing_aaseq_tool__")
 
 
 if __name__ == "__main__":

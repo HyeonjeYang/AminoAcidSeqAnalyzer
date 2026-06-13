@@ -7,6 +7,7 @@ from aaseq.alignment import conservation_dataframe, consensus_sequence, referenc
 from aaseq.annotations import annotate_functional_motifs
 from aaseq.disorder import analyze_idr
 from aaseq.enrichment import group_feature_enrichment
+from aaseq.llps import analyze_llps
 from aaseq.motifs import get_fuzzy_repeats, getrep
 from aaseq.processing import process_fasta_to_matrix
 from aaseq.qc import analyze_fasta_qc
@@ -23,6 +24,7 @@ from aaseq.visualization import (
     plot_conservation,
     plot_hydrophobicity,
     plot_idr_profile,
+    plot_llps_profile,
     plot_motif_tracks,
     plot_plddt_profile,
     visualize_matrix,
@@ -46,7 +48,7 @@ def get_motif_columns(matrix, min_len, max_len):
     for col in matrix.columns:
         if col.startswith("Fuzzy_"):
             motif_cols.append(col)
-        elif col.startswith("Prop_") or col.startswith("IDR_") or col in NON_MOTIF_COLUMNS:
+        elif col.startswith("Prop_") or col.startswith("IDR_") or col.startswith("LLPS_") or col in NON_MOTIF_COLUMNS:
             continue
         elif min_len <= len(col) <= max_len and set(col).issubset(STANDARD_AA):
             motif_cols.append(col)
@@ -79,6 +81,10 @@ def main():
     parser.add_argument("--complexity_window", type=int, default=12, help="Window size for low-complexity entropy (default: 12)")
     parser.add_argument("--disorder_threshold", type=float, default=0.2, help="Disorder score threshold (default: 0.2)")
     parser.add_argument("--low_complexity_threshold", type=float, default=0.55, help="Normalized entropy threshold for low complexity (default: 0.55)")
+    parser.add_argument("--llps", action="store_true", help="Analyze IDR/LLPS-related sequence features and candidate regions")
+    parser.add_argument("--llps_window", type=int, default=31, help="Sliding window size for LLPS local features (default: 31)")
+    parser.add_argument("--llps_threshold", type=float, default=0.6, help="Local LLPS score threshold for candidate regions (default: 0.6)")
+    parser.add_argument("--llps_min_region", type=int, default=20, help="Minimum LLPS candidate region length (default: 20)")
     parser.add_argument("--motif_tracks", action="store_true", help="Plot repeated motif positions along the selected sequence")
     parser.add_argument("--track_top_n", type=int, default=20, help="Number of repeated motifs to show in motif tracks")
     parser.add_argument("--metadata", type=str, help="CSV metadata file for group enrichment")
@@ -96,7 +102,7 @@ def main():
     parser.add_argument("--seq_phylogeny", action="store_true", help="Perform alignment-based phylogenetic analysis (BLOSUM62 pairwise alignment) across all sequences")
     parser.add_argument("--mutate", action="store_true", help="Perform In Silico Mutagenesis on the selected sequence and visualize the effect")
     parser.add_argument("--mutate_phylogeny", action="store_true", help="Build an alignment-based phylogenetic tree of random point mutants of the selected sequence")
-    parser.add_argument("--mutate_plddt", action="store_true", help="Query the ESMFold API for the mean pLDDT of the wild type and each random point mutant (requires internet, <=400aa)")
+    parser.add_argument("--mutate_plddt", action="store_true", help="Query ESMFold for mean pLDDT of wild type and mutants; long sequences use chunked pLDDT profiles")
     parser.add_argument("--num_mutations", type=int, default=20, help="Number of random point mutations to generate (default: 20)")
     parser.add_argument("--mutation_mode", choices=["random", "systematic"], default="random", help="Mutation generation mode (default: random)")
     parser.add_argument("--mutation_positions", type=str, help="1-based mutation positions, e.g. '5,10-15'")
@@ -160,6 +166,19 @@ def main():
                 print(f"  {key}: {value}")
             print_table_preview("IDR / low-complexity regions", regions)
             plot_idr_profile(scores, "Input Sequence", regions)
+
+        if args.llps:
+            llps_summary, llps_prof, llps_regions = analyze_llps(
+                sequence,
+                window=args.llps_window,
+                threshold=args.llps_threshold,
+                min_region=args.llps_min_region,
+            )
+            print("\nLLPS / condensate feature summary:")
+            for key, value in llps_summary.items():
+                print(f"  {key}: {value}")
+            print_table_preview("LLPS candidate regions", llps_regions)
+            plot_llps_profile(llps_prof, "Input Sequence", llps_regions)
 
         if args.motif_tracks:
             track_df = motif_track_dataframe(
@@ -237,6 +256,7 @@ def main():
         include_fuzzy=args.fuzzy_motifs,
         fuzzy_mismatches=args.fuzzy_mismatches,
         include_idr=args.idr,
+        include_llps=args.llps,
     )
 
     if matrix is not None:
@@ -254,7 +274,7 @@ def main():
         target_record = None
         if any([
             args.hydrophobicity, args.mutate, args.mutate_phylogeny, args.mutate_plddt,
-            args.idr, args.motif_tracks, args.annotate, args.motif_stats, args.plddt_profile,
+            args.idr, args.llps, args.motif_tracks, args.annotate, args.motif_stats, args.plddt_profile,
         ]):
             target_record = find_record(args.fasta_file, args.record_id)
             if target_record is None:
@@ -300,6 +320,28 @@ def main():
                 print("IDR scores/regions saved as 'idr_scores.csv' and 'idr_regions.csv'!")
             if args.report:
                 tables.append((f"IDR Regions ({target_record.id})", regions))
+
+        if args.llps and target_record is not None:
+            llps_summary, llps_prof, llps_regions = analyze_llps(
+                str(target_record.seq),
+                window=args.llps_window,
+                threshold=args.llps_threshold,
+                min_region=args.llps_min_region,
+            )
+            print("\nLLPS / condensate feature summary:")
+            for key, value in llps_summary.items():
+                print(f"  {key}: {value}")
+            print_table_preview(f"LLPS candidate regions ({target_record.id})", llps_regions)
+            save_path = os.path.join(report_dir, "llps_profile.png") if args.report else None
+            plot_llps_profile(llps_prof, target_record.id, llps_regions, save_path=save_path)
+            if save_path:
+                figures.append((f"LLPS Candidate Profile ({target_record.id})", save_path))
+            if args.save:
+                llps_prof.to_csv("llps_profile.csv", index=False)
+                llps_regions.to_csv("llps_regions.csv", index=False)
+                print("LLPS profile/regions saved as 'llps_profile.csv' and 'llps_regions.csv'!")
+            if args.report:
+                tables.append((f"LLPS Candidate Regions ({target_record.id})", llps_regions))
 
         if args.motif_tracks and target_record is not None:
             track_df = motif_track_dataframe(

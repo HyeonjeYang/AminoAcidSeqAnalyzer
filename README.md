@@ -31,6 +31,7 @@ python AminoAcidAnalyzer.py <fasta_file> [options]
 - **Fuzzy repeat motif families** (`--fuzzy_motifs`): clusters same-length windows that differ by a small number of residues (`--fuzzy_mismatches`)
 - **Motif significance** (`--motif_stats`): composition-preserving sequence shuffles with z-scores, empirical p-values, and FDR
 - **IDR / low-complexity analysis** (`--idr`): TOP-IDP-style disorder propensity, normalized sequence entropy, region calls, and plots
+- **LLPS / condensate feature analysis** (`--llps`): heuristic IDR-mediated phase-separation features, including prion-like/polar composition, aromatic/cationic stickers, RGG motifs, and charge-pattern descriptors
 - **Motif position tracks** (`--motif_tracks`): maps repeated motifs along the selected sequence
 - **Physicochemical properties**: per-sequence composition ratios (non-polar, polar, aromatic, positive, negative), N-glycosylation sequon count (`N-X-[S/T]`), plus ProtParam metrics (molecular weight, isoelectric point, instability index, aromaticity, GRAVY)
 - **Functional annotation** (`--annotate`): rule-based N-glycosylation, phosphorylation-like, NLS, PEST-like, transmembrane, and signal-peptide-like motif calls
@@ -64,7 +65,7 @@ Examples:
 python AminoAcidAnalyzer.py proteins.fasta --qc --fuzzy_motifs --idr --motif_tracks --annotate --save
 python AminoAcidAnalyzer.py proteins.fasta --msa --seq_phylogeny --report
 python AminoAcidAnalyzer.py proteins.fasta --metadata metadata.csv --group_enrichment --save
-python AminoAcidAnalyzer.py proteins.fasta --record_id NP_000000.1 --motif_stats --num_shuffles 1000 --idr
+python AminoAcidAnalyzer.py proteins.fasta --record_id NP_000000.1 --motif_stats --num_shuffles 1000 --idr --llps
 python AminoAcidAnalyzer.py proteins.fasta --record_id NP_000000.1 --mutate --mutation_mode systematic --target_motif PEST --save
 ```
 
@@ -75,6 +76,7 @@ Every major feature can also be run on its own via the scripts in `scripts/`, wi
 - `python scripts/motif_analysis.py <fasta_file> [--save]` - repeat-motif/property matrix + heatmap
 - `python scripts/fuzzy_motif_analysis.py <fasta_file> [--record_id ID] [--fuzzy] [--stats] [--save]` - exact/fuzzy motifs and shuffle enrichment
 - `python scripts/idr_analysis.py <fasta_file> [--record_id ID] [--save]` - IDR and low-complexity analysis
+- `python scripts/llps_analysis.py <fasta_file> [--record_id ID] [--save]` - IDR/LLPS-related sequence features and candidate regions
 - `python scripts/motif_track_analysis.py <fasta_file> [--record_id ID] [--save]` - repeated motif coordinate tracks
 - `python scripts/annotation_analysis.py <fasta_file> [--record_id ID] [--save]` - rule-based functional motif annotation
 - `python scripts/qc_analysis.py <fasta_file> [--save]` - FASTA quality checks
@@ -87,12 +89,25 @@ Every major feature can also be run on its own via the scripts in `scripts/`, wi
 - `python scripts/hydrophobicity_analysis.py <fasta_file> [--record_id ID] [--window N]` - Kyte-Doolittle hydrophobicity profile, also accepts `--seq`
 - `python scripts/quick_seq_analysis.py "MKT..."` - repeat motifs + physicochemical properties for a single sequence
 
+### Optional external tools
+
+These wrappers require separately installed command-line tools. No source code from these projects is copied into this repository.
+
+- `python scripts/mmseqs_cluster_analysis.py proteins.fasta --min_seq_id 0.5 --coverage 0.8` - clusters sequences with an installed [MMseqs2](https://github.com/soedinglab/MMseqs2) binary
+- `python scripts/foldseek_search_analysis.py query_structures target_database --output_tsv foldseek_results.tsv` - searches structures with an installed [Foldseek](https://github.com/steineggerlab/foldseek) binary
+
 ## Notebooks
 
 The original `AminoAcidAnalyzer.ipynb` is left unchanged. Additional lightweight notebooks are in `notebooks/`:
 
 - `notebooks/IDR_Motif_Workflow.ipynb` - selected-sequence IDR, repeat motif, motif-track, and annotation workflow
 - `notebooks/Batch_MSA_Group_Workflow.ipynb` - FASTA QC, matrix creation, MSA conservation, and optional metadata group enrichment
+
+## Long-sequence pLDDT chunking
+
+The public ESMFold endpoint can reject long sequences. For `--plddt_profile`, this project can split long proteins into overlapping <=400aa chunks, run ESMFold per chunk, and merge residue-level pLDDT with center-weighted averaging. This is reasonable for exploratory local confidence profiling, especially around IDRs and low-complexity regions, because pLDDT is a per-residue confidence estimate and overlap reduces boundary artifacts.
+
+It is not a replacement for a full-length structure prediction. Cutting a protein removes long-range domain/domain and terminal context, so chunked pLDDT should not be used to infer global folds, interfaces, allostery, domain packing, or precise effects of mutations outside the chunk context.
 
 ## Third-party acknowledgements
 
@@ -104,9 +119,11 @@ No third-party GitHub source code is vendored or copied into this repository. Th
 - [tqdm](https://github.com/tqdm/tqdm/blob/master/LICENCE) - MIT license with noted MPL-2.0 portions; used for progress bars.
 - [requests](https://github.com/psf/requests/blob/main/LICENSE) - Apache License 2.0; used for HTTP requests.
 - [ESMFold / ESM Atlas](https://esmatlas.com/about) is accessed as a remote service for structure/pLDDT prediction. No Meta ESM source code is bundled here; the upstream [ESM repository](https://github.com/facebookresearch/esm/blob/main/LICENSE) is MIT licensed.
+- [MMseqs2](https://github.com/soedinglab/MMseqs2/blob/master/LICENSE.md), associated with the Söding/Steinegger ecosystem, is MIT licensed. This project does not copy MMseqs2 code; it only provides an optional wrapper for a user-installed binary.
+- [Foldseek](https://github.com/steineggerlab/foldseek/blob/master/LICENSE.md) and [HH-suite](https://github.com/soedinglab/hh-suite/blob/master/LICENSE) are GPL-3.0 licensed upstream. To avoid mixing GPL source into this MIT project, no Foldseek or HH-suite source code is copied here; optional use should remain through separately installed command-line tools.
 - [NCBI E-utilities](https://www.ncbi.nlm.nih.gov/books/NBK25497/) were used to download example protein sequences. Follow NCBI's usage guidelines, Disclaimer, and Copyright notice when using or redistributing data obtained from NCBI.
 
-Scientific methods and scales implemented or accessed here build on prior work, including ProtParam, Kyte-Doolittle hydrophobicity, BLOSUM62 alignment scoring, and the TOP-IDP intrinsic-disorder propensity scale. Please cite the relevant original scientific publications when using those analyses in publications or reports.
+Scientific methods and scales implemented or accessed here build on prior work, including ProtParam, Kyte-Doolittle hydrophobicity, BLOSUM62 alignment scoring, TOP-IDP intrinsic-disorder propensity, charge-pattern descriptors for IDRs, sticker-spacer thinking for condensates, prion-like composition, and pi/pi or cation/pi interaction concepts used in LLPS studies. The LLPS module is an original heuristic feature calculator, not a copied implementation of PScore, PLAAC, FuzDrop, PSPredictor, ParSe, or another trained predictor. Please cite the relevant original scientific publications when using those analyses in publications or reports.
 
 ## Project layout
 
@@ -115,11 +132,13 @@ Scientific methods and scales implemented or accessed here build on prior work, 
 - `aaseq/motifs.py` - repeat motif detection
 - `aaseq/statistics.py` - shuffle-based motif enrichment
 - `aaseq/disorder.py` - IDR and low-complexity heuristics
+- `aaseq/llps.py` - IDR/LLPS-related sequence feature heuristics
 - `aaseq/tracks.py` - motif coordinate tables
 - `aaseq/annotations.py` - rule-based functional motif annotations
 - `aaseq/alignment.py` - reference-guided MSA and conservation
 - `aaseq/enrichment.py` - metadata group enrichment
 - `aaseq/qc.py` - FASTA quality control
+- `aaseq/external_tools.py` - optional wrappers for separately installed external tools
 - `aaseq/properties.py` - physicochemical properties, hydrophobicity profile, mutant generation
 - `aaseq/processing.py` - FASTA parsing and parallel feature-matrix construction
 - `aaseq/visualization.py` - plots: heatmaps, PCA/clustering, dendrograms, hydrophobicity, ESMFold pLDDT comparison

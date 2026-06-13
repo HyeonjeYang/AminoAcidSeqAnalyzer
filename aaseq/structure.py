@@ -71,8 +71,27 @@ def chunk_sequence(sequence, max_len=ESMFOLD_MAX_LEN, overlap=50):
     return chunks
 
 
-def predict_plddt_profile(sequence, timeout=120, max_len=ESMFOLD_MAX_LEN, overlap=50):
-    """Returns per-residue pLDDT scores, chunking long sequences when needed."""
+def _chunk_weights(length, edge_fraction=0.15):
+    """Center-weight chunk residue scores to reduce boundary artifacts."""
+    if length <= 2:
+        return np.ones(length, dtype=float)
+
+    edge = max(1, int(length * edge_fraction))
+    weights = np.ones(length, dtype=float)
+    for idx in range(edge):
+        weight = (idx + 1) / edge
+        weights[idx] = min(weights[idx], weight)
+        weights[length - idx - 1] = min(weights[length - idx - 1], weight)
+    return weights
+
+
+def predict_plddt_profile(sequence, timeout=120, max_len=ESMFOLD_MAX_LEN, overlap=50, center_weight=True):
+    """Returns per-residue pLDDT scores, chunking long sequences when needed.
+
+    Chunking is an approximation for local pLDDT only. It should not be treated
+    as a full-length structure prediction because inter-domain context is lost.
+    Overlap plus center-weighted merging reduces edge artifacts.
+    """
     sequence = sequence.replace("\n", "").strip().upper()
     if not sequence:
         return None
@@ -103,8 +122,10 @@ def predict_plddt_profile(sequence, timeout=120, max_len=ESMFOLD_MAX_LEN, overla
         usable = min(len(scores), len(chunk))
         if usable == 0:
             continue
-        totals[start:start + usable] += np.array(scores[:usable], dtype=float)
-        counts[start:start + usable] += 1
+        chunk_scores = np.array(scores[:usable], dtype=float)
+        weights = _chunk_weights(usable) if center_weight else np.ones(usable, dtype=float)
+        totals[start:start + usable] += chunk_scores * weights
+        counts[start:start + usable] += weights
 
     if not np.any(counts):
         return None
