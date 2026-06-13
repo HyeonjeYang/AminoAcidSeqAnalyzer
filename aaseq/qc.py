@@ -10,7 +10,8 @@ AMBIGUOUS_AA = set("XBZUO")
 
 def analyze_fasta_qc(fasta_file, min_length=30):
     """Checks FASTA records for common sequence-quality issues."""
-    records = list(SeqIO.parse(fasta_file, "fasta"))
+    with open(fasta_file, "r", encoding="utf-8") as handle:
+        records = list(SeqIO.parse(handle, "fasta"))
     ids = [record.id for record in records]
     sequences = [str(record.seq).replace("\n", "").strip().upper() for record in records]
     lengths = [len(seq) for seq in sequences]
