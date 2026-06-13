@@ -94,6 +94,20 @@ The original `AminoAcidAnalyzer.ipynb` is left unchanged. Additional lightweight
 - `notebooks/IDR_Motif_Workflow.ipynb` - selected-sequence IDR, repeat motif, motif-track, and annotation workflow
 - `notebooks/Batch_MSA_Group_Workflow.ipynb` - FASTA QC, matrix creation, MSA conservation, and optional metadata group enrichment
 
+## Third-party acknowledgements
+
+No third-party GitHub source code is vendored or copied into this repository. The analyzer uses external Python libraries and public web services through their normal APIs. Those projects retain their own copyright and license terms:
+
+- [Biopython](https://github.com/biopython/biopython/blob/master/LICENSE.rst) - Biopython License Agreement / BSD 3-Clause; used for FASTA parsing, ProtParam metrics, hydrophobicity scale data, and alignment utilities.
+- [NumPy](https://github.com/numpy/numpy/blob/main/LICENSE.txt), [pandas](https://github.com/pandas-dev/pandas/blob/main/LICENSE), [scikit-learn](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING), [SciPy](https://github.com/scipy/scipy/blob/main/LICENSE.txt), and [seaborn](https://github.com/mwaskom/seaborn/blob/master/LICENSE.md) - BSD-style licenses; used for numerical analysis, tables, clustering, statistics, and plotting.
+- [Matplotlib](https://github.com/matplotlib/matplotlib/blob/main/LICENSE/LICENSE) - Matplotlib license; used for plots.
+- [tqdm](https://github.com/tqdm/tqdm/blob/master/LICENCE) - MIT license with noted MPL-2.0 portions; used for progress bars.
+- [requests](https://github.com/psf/requests/blob/main/LICENSE) - Apache License 2.0; used for HTTP requests.
+- [ESMFold / ESM Atlas](https://esmatlas.com/about) is accessed as a remote service for structure/pLDDT prediction. No Meta ESM source code is bundled here; the upstream [ESM repository](https://github.com/facebookresearch/esm/blob/main/LICENSE) is MIT licensed.
+- [NCBI E-utilities](https://www.ncbi.nlm.nih.gov/books/NBK25497/) were used to download example protein sequences. Follow NCBI's usage guidelines, Disclaimer, and Copyright notice when using or redistributing data obtained from NCBI.
+
+Scientific methods and scales implemented or accessed here build on prior work, including ProtParam, Kyte-Doolittle hydrophobicity, BLOSUM62 alignment scoring, and the TOP-IDP intrinsic-disorder propensity scale. Please cite the relevant original scientific publications when using those analyses in publications or reports.
+
 ## Project layout
 
 - `AminoAcidAnalyzer.py` - combined CLI entry point and orchestration
