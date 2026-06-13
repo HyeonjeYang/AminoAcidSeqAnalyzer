@@ -111,16 +111,11 @@ It is not a replacement for a full-length structure prediction. Cutting a protei
 
 ## Third-party acknowledgements
 
-No third-party GitHub source code is vendored or copied into this repository. The analyzer uses external Python libraries and public web services through their normal APIs. Those projects retain their own copyright and license terms:
+No ESMFold, MMseqs2, Foldseek, or NCBI source/data is vendored into this repository. These external resources are only accessed through public APIs or separately installed command-line tools:
 
-- [Biopython](https://github.com/biopython/biopython/blob/master/LICENSE.rst) - Biopython License Agreement / BSD 3-Clause; used for FASTA parsing, ProtParam metrics, hydrophobicity scale data, and alignment utilities.
-- [NumPy](https://github.com/numpy/numpy/blob/main/LICENSE.txt), [pandas](https://github.com/pandas-dev/pandas/blob/main/LICENSE), [scikit-learn](https://github.com/scikit-learn/scikit-learn/blob/main/COPYING), [SciPy](https://github.com/scipy/scipy/blob/main/LICENSE.txt), and [seaborn](https://github.com/mwaskom/seaborn/blob/master/LICENSE.md) - BSD-style licenses; used for numerical analysis, tables, clustering, statistics, and plotting.
-- [Matplotlib](https://github.com/matplotlib/matplotlib/blob/main/LICENSE/LICENSE) - Matplotlib license; used for plots.
-- [tqdm](https://github.com/tqdm/tqdm/blob/master/LICENCE) - MIT license with noted MPL-2.0 portions; used for progress bars.
-- [requests](https://github.com/psf/requests/blob/main/LICENSE) - Apache License 2.0; used for HTTP requests.
 - [ESMFold / ESM Atlas](https://esmatlas.com/about) is accessed as a remote service for structure/pLDDT prediction. No Meta ESM source code is bundled here; the upstream [ESM repository](https://github.com/facebookresearch/esm/blob/main/LICENSE) is MIT licensed.
 - [MMseqs2](https://github.com/soedinglab/MMseqs2/blob/master/LICENSE.md), associated with the Söding/Steinegger ecosystem, is MIT licensed. This project does not copy MMseqs2 code; it only provides an optional wrapper for a user-installed binary.
-- [Foldseek](https://github.com/steineggerlab/foldseek/blob/master/LICENSE.md) and [HH-suite](https://github.com/soedinglab/hh-suite/blob/master/LICENSE) are GPL-3.0 licensed upstream. To avoid mixing GPL source into this MIT project, no Foldseek or HH-suite source code is copied here; optional use should remain through separately installed command-line tools.
+- [Foldseek](https://github.com/steineggerlab/foldseek/blob/master/LICENSE.md) is GPL-3.0 licensed upstream. To avoid mixing GPL source into this MIT project, no Foldseek source code is copied here; optional use should remain through a separately installed command-line tool.
 - [NCBI E-utilities](https://www.ncbi.nlm.nih.gov/books/NBK25497/) were used to download example protein sequences. Follow NCBI's usage guidelines, Disclaimer, and Copyright notice when using or redistributing data obtained from NCBI.
 
 Scientific methods and scales implemented or accessed here build on prior work, including ProtParam, Kyte-Doolittle hydrophobicity, BLOSUM62 alignment scoring, TOP-IDP intrinsic-disorder propensity, charge-pattern descriptors for IDRs, sticker-spacer thinking for condensates, prion-like composition, and pi/pi or cation/pi interaction concepts used in LLPS studies. The LLPS module is an original heuristic feature calculator, not a copied implementation of PScore, PLAAC, FuzDrop, PSPredictor, ParSe, or another trained predictor. Please cite the relevant original scientific publications when using those analyses in publications or reports.
