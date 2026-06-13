@@ -208,7 +208,8 @@ def in_silico_mutagenesis(
     positions=None,
     target_motif=None,
 ):
-    print("\nPerforming In Silico Mutagenesis (Random point mutations)...")
+    label = "systematic single mutants" if mutation_mode == "systematic" else "random point mutations"
+    print(f"\nPerforming In Silico Mutagenesis ({label})...")
     mutant_ids, mutants = _generate_mutation_panel(
         sequence, num_mutations, mutation_mode, seed, positions, target_motif
     )
