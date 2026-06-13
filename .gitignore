@@ -6,3 +6,19 @@ __pycache__/
 repeat_matrix.csv
 mutation_matrix.csv
 report/
+
+# Local NCBI/example data and generated results
+examples/ncbi/
+examples/results/
+example_outputs/
+motif_enrichment.csv
+motif_tracks.csv
+idr_scores.csv
+idr_regions.csv
+annotations.csv
+group_enrichment.csv
+msa_alignment.fasta
+msa_conservation.csv
+qc_issues.csv
+plddt_profile.csv
+mutation_plddt.csv
