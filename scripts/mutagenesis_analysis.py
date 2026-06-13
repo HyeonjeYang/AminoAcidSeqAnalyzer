@@ -1,9 +1,9 @@
-"""Standalone: in silico random point-mutagenesis analysis.
+"""Standalone: in silico point-mutagenesis analysis.
 
 Pick one or more analysis types:
   --heatmap   : motif/property heatmap of wild type vs mutants
   --phylogeny : alignment-based phylogenetic tree of wild type vs mutants
-  --plddt     : ESMFold mean pLDDT comparison of wild type vs mutants (requires internet, <=400aa)
+  --plddt     : ESMFold mean pLDDT comparison of wild type vs mutants (long sequences are chunked)
 
 Usage:
     python scripts/mutagenesis_analysis.py <fasta_file> --record_id ID --heatmap --phylogeny --plddt
@@ -20,11 +20,15 @@ from aaseq.visualization import in_silico_mutagenesis, mutagenesis_phylogeny, mu
 
 
 def main():
-    parser = argparse.ArgumentParser(description="In silico random point-mutagenesis analysis.")
+    parser = argparse.ArgumentParser(description="In silico point-mutagenesis analysis.")
     parser.add_argument("fasta_file", nargs="?", help="Path to the FASTA file (.fasta). Not required when using --seq.")
     parser.add_argument("--seq", type=str, help="Directly analyze a single amino acid sequence string (no FASTA file needed)")
     parser.add_argument("--record_id", type=str, default=None, help="Record ID to mutate (default: first record)")
     parser.add_argument("--num_mutations", type=int, default=20, help="Number of random point mutations to generate (default: 20)")
+    parser.add_argument("--mutation_mode", choices=["random", "systematic"], default="random", help="Mutation generation mode (default: random)")
+    parser.add_argument("--mutation_positions", type=str, help="1-based mutation positions, e.g. '5,10-15'")
+    parser.add_argument("--target_motif", type=str, help="Restrict mutations to exact occurrences of this motif")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducible random mutations")
     parser.add_argument("--min_len", type=int, default=3, help="Minimum motif length for --heatmap (default: 3)")
     parser.add_argument("--max_len", type=int, default=10, help="Maximum motif length for --heatmap (default: 10)")
     parser.add_argument("--min_reps", type=int, default=2, help="Minimum repetition count for --heatmap (default: 2)")
@@ -48,16 +52,40 @@ def main():
         parser.error("Specify at least one of --heatmap, --phylogeny, --plddt.")
 
     if args.heatmap:
-        mut_matrix = in_silico_mutagenesis(sequence, args.min_len, args.max_len, args.min_reps, args.num_mutations)
+        mut_matrix = in_silico_mutagenesis(
+            sequence,
+            args.min_len,
+            args.max_len,
+            args.min_reps,
+            args.num_mutations,
+            mutation_mode=args.mutation_mode,
+            seed=args.seed,
+            positions=args.mutation_positions,
+            target_motif=args.target_motif,
+        )
         if args.save:
             mut_matrix.to_csv("mutation_matrix.csv")
             print("Saved successfully as 'mutation_matrix.csv'!")
 
     if args.phylogeny:
-        mutagenesis_phylogeny(sequence, args.num_mutations)
+        mutagenesis_phylogeny(
+            sequence,
+            args.num_mutations,
+            mutation_mode=args.mutation_mode,
+            seed=args.seed,
+            positions=args.mutation_positions,
+            target_motif=args.target_motif,
+        )
 
     if args.plddt:
-        plddt_df = mutagenesis_plddt(sequence, args.num_mutations)
+        plddt_df = mutagenesis_plddt(
+            sequence,
+            args.num_mutations,
+            mutation_mode=args.mutation_mode,
+            seed=args.seed,
+            positions=args.mutation_positions,
+            target_motif=args.target_motif,
+        )
         if plddt_df is not None and args.save:
             plddt_df.to_csv("mutation_plddt.csv")
             print("Saved successfully as 'mutation_plddt.csv'!")

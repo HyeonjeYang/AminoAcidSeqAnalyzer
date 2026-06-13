@@ -28,12 +28,13 @@ def predict_structure(sequence, timeout=120):
 
 
 def parse_plddt(pdb_text):
-    """Extracts per-residue pLDDT scores (0-100 scale) from an ESMFold PDB
-    (stored as a 0-1 fraction in the B-factor column)."""
+    """Extracts per-residue pLDDT scores on a 0-100 scale from an ESMFold PDB."""
     scores = []
     for line in pdb_text.splitlines():
         if _PLDDT_PATTERN.match(line):
-            scores.append(float(line[60:66]) * 100)
+            scores.append(float(line[60:66]))
+    if scores and max(scores) <= 1.5:
+        scores = [score * 100 for score in scores]
     return scores
 
 

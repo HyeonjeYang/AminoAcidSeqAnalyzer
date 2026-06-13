@@ -24,9 +24,10 @@ def find_record(fasta_file, record_id=None):
     return None
 
 
-def generate_report(output_dir, source, matrix, figures, mut_matrix=None):
+def generate_report(output_dir, source, matrix, figures, mut_matrix=None, tables=None):
     """Writes an HTML summary report combining the feature matrix and saved figures."""
     os.makedirs(output_dir, exist_ok=True)
+    tables = tables or []
 
     html_parts = [
         "<html><head><meta charset='utf-8'><title>Amino Acid Sequence Analysis Report</title></head><body>",
@@ -39,6 +40,10 @@ def generate_report(output_dir, source, matrix, figures, mut_matrix=None):
 
     for title, img_path in figures:
         html_parts.append(f"<h2>{title}</h2><img src='{os.path.basename(img_path)}' style='max-width:100%;'>")
+
+    for title, table in tables:
+        html_parts.append(f"<h2>{title}</h2>")
+        html_parts.append(table.to_html(index=False) if hasattr(table, "to_html") else str(table))
 
     if mut_matrix is not None:
         html_parts.append("<h2>In Silico Mutagenesis Matrix</h2>")
