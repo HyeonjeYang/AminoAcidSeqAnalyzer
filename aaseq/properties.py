@@ -51,25 +51,111 @@ def get_hydrophobicity_profile(sequence, window=9):
     return positions, scores
 
 
-def generate_point_mutants(sequence, num_mutations=20):
+def parse_position_spec(position_spec, sequence_length):
+    """Parses 1-based positions such as '3,10-15' into 0-based indexes."""
+    if not position_spec:
+        return None
+
+    positions = set()
+    for token in str(position_spec).split(","):
+        token = token.strip()
+        if not token:
+            continue
+        if "-" in token:
+            start_text, end_text = token.split("-", 1)
+            start = int(start_text)
+            end = int(end_text)
+            for pos in range(start, end + 1):
+                if 1 <= pos <= sequence_length:
+                    positions.add(pos - 1)
+        else:
+            pos = int(token)
+            if 1 <= pos <= sequence_length:
+                positions.add(pos - 1)
+
+    return sorted(positions)
+
+
+def motif_positions(sequence, motif):
+    """Returns 0-based positions covered by all exact motif matches."""
+    sequence = sequence.replace("\n", "").strip().upper()
+    motif = motif.replace("\n", "").strip().upper()
+    positions = set()
+    start = 0
+    while motif:
+        idx = sequence.find(motif, start)
+        if idx == -1:
+            break
+        positions.update(range(idx, idx + len(motif)))
+        start = idx + 1
+    return sorted(positions)
+
+
+def generate_point_mutants(sequence, num_mutations=20, seed=None, positions=None, target_motif=None):
     """Generates random single-point amino acid mutants of a sequence.
 
     Returns (mutant_ids, mutant_sequences), where the first entry is always
     the unmutated 'Wild_Type' sequence.
     """
+    sequence = sequence.replace("\n", "").strip().upper()
     amino_acids = "ACDEFGHIKLMNPQRSTVWY"
     seq_list = list(sequence)
+    rng = random.Random(seed)
     mutants = [sequence]
     mutant_ids = ["Wild_Type"]
+    if target_motif:
+        positions = motif_positions(sequence, target_motif)
+    elif isinstance(positions, str):
+        positions = parse_position_spec(positions, len(sequence))
+    elif positions is not None:
+        positions = sorted({int(pos) for pos in positions if 0 <= int(pos) < len(sequence)})
+    else:
+        positions = list(range(len(sequence)))
+
+    if not positions:
+        raise ValueError("No valid mutation positions were provided.")
 
     for _ in range(num_mutations):
-        idx = random.randint(0, len(seq_list) - 1)
+        idx = rng.choice(positions)
         original_aa = seq_list[idx]
-        new_aa = random.choice(amino_acids.replace(original_aa, ""))
+        if original_aa not in amino_acids:
+            choices = amino_acids
+        else:
+            choices = amino_acids.replace(original_aa, "")
+        new_aa = rng.choice(choices)
 
         mutated_seq = seq_list.copy()
         mutated_seq[idx] = new_aa
         mutants.append("".join(mutated_seq))
         mutant_ids.append(f"Mut_{original_aa}{idx+1}{new_aa}")
 
+    return mutant_ids, mutants
+
+
+def generate_systematic_single_mutants(sequence, positions=None, target_motif=None):
+    """Generates all single amino-acid substitutions at selected positions."""
+    sequence = sequence.replace("\n", "").strip().upper()
+    amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+    if target_motif:
+        positions = motif_positions(sequence, target_motif)
+    elif isinstance(positions, str):
+        positions = parse_position_spec(positions, len(sequence))
+    elif positions is not None:
+        positions = sorted({int(pos) for pos in positions if 0 <= int(pos) < len(sequence)})
+    else:
+        positions = list(range(len(sequence)))
+
+    if not positions:
+        raise ValueError("No valid mutation positions were provided.")
+
+    mutants = [sequence]
+    mutant_ids = ["Wild_Type"]
+    for idx in positions:
+        original_aa = sequence[idx]
+        choices = amino_acids.replace(original_aa, "") if original_aa in amino_acids else amino_acids
+        for new_aa in choices:
+            mutated_seq = list(sequence)
+            mutated_seq[idx] = new_aa
+            mutants.append("".join(mutated_seq))
+            mutant_ids.append(f"Mut_{original_aa}{idx+1}{new_aa}")
     return mutant_ids, mutants
